@@ -7,25 +7,32 @@ namespace Lumturo;
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
+    private readonly IScannerProvider _scanner;
     private LumturoConfig _config;
     private readonly IDisposable? _configMonitorDisposable;
 
-    public Worker(ILogger<Worker> logger, IOptionsMonitor<LumturoConfig> optionsMonitor)
+    public Worker(ILogger<Worker> logger, IOptionsMonitor<LumturoConfig> optionsMonitor, IScannerProvider scanner)
     {
         _logger = logger;
+        _scanner = scanner;
         _config = optionsMonitor.CurrentValue;
         _configMonitorDisposable = optionsMonitor.OnChange(ConfigChangedHandler);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
         _logger.LogInformation("Background worker starting...");
         _logger.LogInformation("Scan level is set to {ScanLevel} with period to {ScanPeriod}", _config.ScanLevel, _config.ScanPeriod.Humanize());
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
+            try
             {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                await _scanner.ScanAsync(_config.ScanLevel, stoppingToken);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("Scanning failed: {Message}", e.Message);
             }
             await Task.Delay(_config.ScanPeriod, stoppingToken);
         }
