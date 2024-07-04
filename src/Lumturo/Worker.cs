@@ -98,7 +98,7 @@ public class Worker : BackgroundService
 
                 if (containersToUpdate.Count > 0)
                 {
-                    var containersNamesToUpdate = containersToUpdate.Select(c => c.Name).ToList();
+                    var containersNamesToUpdate = containersToUpdate.Select(c => c.Name.Trim('/')).ToList();
                     _logger.LogInformation("Found {Count} to update: {Names}", "container".ToQuantity(containersToUpdate.Count), string.Join(", ", containersNamesToUpdate));
                 }
             }
